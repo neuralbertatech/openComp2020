@@ -1,4 +1,6 @@
 Drone Resources:
-SDK Documentation - https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
-Generic Documentation - https://dl-cdn.ryzerobotics.com/downloads/Tello/20180212/Tello+User+Manual+v1.0_EN_2.12.pdf
-TelloPy Git - https://github.com/johnwalicki/tello-python-examples
+
+SDK Documentation:        https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
+Generic Documentation:    https://dl-cdn.ryzerobotics.com/downloads/Tello/20180212/Tello+User+Manual+v1.0_EN_2.12.pdf
+TelloPy Git:              https://github.com/johnwalicki/tello-python-examples
+Tello Eample Code:        https://github.com/dji-sdk/Tello-Python/tree/master/Single_Tello_Test
