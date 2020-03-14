@@ -1,6 +1,7 @@
 Resources:
 
-SDK Documentation:        https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
+SDK Documentation 2.0:    https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
+SDK Documentation 1.3:    https://terra-1-g.djicdn.com/2d4dce68897a46b19fc717f3576b7c6a/Tello%20编程相关/For%20Tello/Tello%20SDK%20Documentation%20EN_1.3_1122.pdf
 Generic Documentation:    https://dl-cdn.ryzerobotics.com/downloads/Tello/20180212/Tello+User+Manual+v1.0_EN_2.12.pdf
 TelloPy Git:              https://github.com/johnwalicki/tello-python-examples
 Tello Eample Code:        https://github.com/dji-sdk/Tello-Python/tree/master/Single_Tello_Test
