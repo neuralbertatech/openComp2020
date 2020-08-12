@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score
+import pickle
 
 def main():
     dataset = pd.read_csv('dataCSV.csv')
@@ -26,10 +27,6 @@ def main():
     classifier = RandomForestClassifier(n_estimators = 10, criterion = 'entropy', random_state = 0)
     classifier.fit(X_train, y_train)
 
-    y_pred = classifier.predict(X_test)
-
-    cm = confusion_matrix(y_test, y_pred)
-    print(cm)
-    print(accuracy_score(y_test, y_pred))
+    pickle.dump(classifier, open('random_forest_model.sav', 'wb'))
 
 main()

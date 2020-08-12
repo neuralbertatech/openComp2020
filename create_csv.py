@@ -29,6 +29,7 @@ def main():
             line = line.lstrip("[")
             line = line.strip("\n")
             line = line.rstrip("]")
+            line = line.replace(" ", "")
 
             fname = os.path.basename(file.name).rstrip(".txt")
             fname = re.sub(r'\d+', '', fname)
