@@ -23,7 +23,7 @@ def main():
     csv.write(header)
 
     for i in range(0, len(fileNames)):
-        file = open("./TrainingData/TrainingDataDroneMovement/" + fileNames[i], "r")
+        file = open("./TrainingData/TrainingDataWords/" + fileNames[i], "r")
         lines = file.readlines()    
         for line in lines:
             line = line.lstrip("[")
