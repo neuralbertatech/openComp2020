@@ -23,7 +23,7 @@ def main():
 
     model = pickle.load(open('random_forest_model.sav', 'rb'))
 
-    data = open("./TrainingData/TrainingDataWords/Up3.txt", "r")
+    data = open("./TrainingData/TrainingDataWords/Down10.txt", "r")
 
     lines = data.readlines()
 
