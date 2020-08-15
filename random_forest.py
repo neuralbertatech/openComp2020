@@ -27,6 +27,10 @@ def main():
     classifier = RandomForestClassifier(n_estimators = 10, criterion = 'entropy', random_state = 0)
     classifier.fit(X_train, y_train)
 
+    variables = {}
+    variables['le'] = le
+    variables['sc'] = sc
     pickle.dump(classifier, open('random_forest_model.sav', 'wb'))
+    pickle.dump(variables, open('random_forest_model_variables.sav', 'wb'))
 
 main()

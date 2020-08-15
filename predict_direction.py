@@ -9,21 +9,13 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 import pickle
 
 def main():
-    dataset = pd.read_csv('dataCSV.csv')
-    X = dataset.iloc[:, :-1].values # all columns except last one, matrix of features x that predict y
-    y = dataset.iloc[:, -1].values # only last column
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
-
-    le = preprocessing.LabelEncoder()
-    le.fit(dataset.iloc[:, -1].values)
-
-    sc = StandardScaler()
-    X_train = sc.fit_transform(X_train)
+    variables = pickle.load(open('random_forest_model_variables.sav', 'rb'))
+    le = variables['le']
+    sc = variables['sc']
 
     model = pickle.load(open('random_forest_model.sav', 'rb'))
 
-    data = open("./TrainingData/TrainingDataWords/Down10.txt", "r")
+    data = open("./TrainingData/TrainingDataWords/Back13.txt", "r")
 
     lines = data.readlines()
 
