@@ -3,45 +3,57 @@ import time
 import random
 
 DataCounter = 501
-FileNumber = [-1, 0, 0, 0, 0, 0, 0] # first has to be -1
-FileTypes = ["Up", "Down", "Forward", 'Back', "Left", "Right", "Stay"]
+StartingNumber = 180
+SamplesToRecord = 20
+EndingNumber = -1 # assign to -1 to be automatically determined by SamplesToRecord
+TestSubject = "Cameron"
+TestFeature = "Limbs"
+FileNumber = [StartingNumber, StartingNumber, StartingNumber, StartingNumber, StartingNumber, StartingNumber, StartingNumber, StartingNumber]
+FileTypes = ["Up", "Down", "Forward", 'Back', "Left", "Right", "Stay", "Jaw"]
 CurrFileType = 0
-MyFile = open("TrainingDataDroneMovement/" + FileTypes[CurrFileType] + str(FileNumber[CurrFileType]) + ".txt", 'w')
+MyFile = open(TestSubject + TestFeature + "/" + FileTypes[CurrFileType] + str(FileNumber[CurrFileType]) + ".txt", 'w')
+
+if(EndingNumber == -1):
+    EndingNumber = StartingNumber + SamplesToRecord
 
 def print_raw(var):
     global DataCounter, FileNumber, FileTypes, CurrFileType, MyFile
 
     # print(var.channels_data)
 
-    if(DataCounter < 500):
-        MyFile.write(str(var.channels_data) + "\n")
+    if(DataCounter < 250): #250 samples = 1 second (250Hz)
+        dataPoint = var.channels_data
+        dataPoint.append(str(FileTypes[CurrFileType]))
+
+        MyFile.write(str(dataPoint) + "\n")
         MyFile.flush()
         DataCounter += 1
 
     else:
-        FileNumber[CurrFileType] += 1
+        if(DataCounter > 500): # First run, ignore it
+            DataCounter = 0
+            CurrFileType = random.randint(0,7)
 
-        CurrFileType = random.randint(0,6)
+        else:
+            FileNumber[CurrFileType] += 1
 
-        print("Current Samples: ")
-        print(FileNumber)
+            CurrFileType = random.randint(0,7)
 
-        if(all(i > 15 for i in FileNumber)):
-            crashprogram
+            print("Current Samples: ")
+            print(FileNumber)
 
-        while(FileNumber[CurrFileType] > 15):
-            CurrFileType = random.randint(0,6)
+            if(all(i > EndingNumber for i in FileNumber)):
+                exit()
 
-        DataCounter = 0
-        MyFile = open("TrainingDataDroneMovement/" + FileTypes[CurrFileType] + str(FileNumber[CurrFileType]) + ".txt", 'w')
+            while(FileNumber[CurrFileType] > EndingNumber):
+                CurrFileType = random.randint(0,7)
 
-        print("Think " + FileTypes[CurrFileType])
-        print("3")
-        time.sleep(1)
-        print("2")
-        time.sleep(1)
-        print("1")
-        time.sleep(1)
+            DataCounter = 0
+            MyFile = open(TestSubject + TestFeature + "/" + FileTypes[CurrFileType] + str(FileNumber[CurrFileType]) + ".txt", 'w')
+
+            print("### " + FileTypes[CurrFileType] + " ###")
+            time.sleep(1)
+            print("Recording.")
 
 
 
