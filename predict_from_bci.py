@@ -77,7 +77,11 @@ def collect_sample(var):
 
     # print(var.channels_data)
 
+<<<<<<< HEAD
     if(DataCounter < 250): #500 samples = 2 seconds (250Hz)
+=======
+    if(DataCounter < 500): #500 samples = 2 seconds (250Hz)
+>>>>>>> 1c80e3685df64a0f763022f676447e3a938b6ba8
         Data.append(var.channels_data)
         DataCounter += 1
 
