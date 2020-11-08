@@ -9,10 +9,6 @@ Forward: Forward
 Back: Back
 Stay: Stay
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 1c80e3685df64a0f763022f676447e3a938b6ba8
 Aug 16
 Data 0-23 collected
 Headset adjusted
@@ -68,7 +64,6 @@ Data 141-160 collected
 Data 161-180 collected
 Data 181-200 collected
 
-<<<<<<< HEAD
 Oct 4
 Data 201-220 collected
 Data 221-240 collected
@@ -107,6 +102,4 @@ Data 621-640 collected
 Data 641-660 collected
 Data 661-680 collected
 
-=======
->>>>>>> 1c80e3685df64a0f763022f676447e3a938b6ba8
 ----------- LIMBS -----------
