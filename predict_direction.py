@@ -15,13 +15,20 @@ def main():
 
     model = pickle.load(open('random_forest_model.sav', 'rb'))
 
-    data = open("./TrainingData/TrainingDataWords/Back13.txt", "r")
+    data = open("./TrainingData/TrainingDataCameron/Back153.txt", "r")
 
     lines = data.readlines()
 
     res = []
 
     for line in lines:
+        line = line.replace(", 'Back'", '')
+        line = line.replace(", 'Up'", '')
+        line = line.replace(", 'Down'", '')
+        line = line.replace(", 'Right'", '')
+        line = line.replace(", 'Left'", '')
+        line = line.replace(", 'Forward'", '')
+        line = line.replace(", 'Stay'", '')
         line = line.strip("\n")
         line = line.replace(" ", "")
         str1 = line.replace(']','').replace('[','')
@@ -32,16 +39,16 @@ def main():
 
     print(most_frequent(res))
 
-def most_frequent(List): 
+def most_frequent(List):
     counter = 0
-    num = List[0] 
-      
-    for i in List: 
-        curr_frequency = List.count(i) 
-        if(curr_frequency> counter): 
-            counter = curr_frequency 
-            num = i 
-  
-    return num 
+    num = List[0]
+
+    for i in List:
+        curr_frequency = List.count(i)
+        if(curr_frequency> counter):
+            counter = curr_frequency
+            num = i
+
+    return num
 
 main()

@@ -1,0 +1,105 @@
+Training Data Notes:
+
+----------- WORDS -----------
+Up: Up
+Down: Down
+Left: Left
+Right: Right
+Forward: Forward
+Back: Back
+Stay: Stay
+
+Aug 16
+Data 0-23 collected
+Headset adjusted
+Data 24-40 collected
+Headset adjusted
+Data 41-50 collected
+
+Aug 17
+Data 51 - 60 collected
+Headset adjusted
+Data 61 - 70 collected
+Headset adjusted
+Data 71 - 80 collected
+
+Aug 18
+Data 81 - 100 collected
+
+Aug 22
+Data 101 - 110 collected
+Headset adjusted
+Data 111 - 120 collected
+Headset adjusted
+Data 121 - 130 collected
+
+Aug 23
+Data 131 - 155 collected
+Headset adjusted
+Data 156 - 180 collected
+Headset adjusted
+Data 181 - 200 collected
+----------- WORDS -----------
+
+
+----------- LIMBS -----------
+Up: Right Bicep Flex
+Down: Left Bicep Flex
+Left: Left Fist
+Right: Right Fist
+Forward: Right Leg Kick
+Back: Left Leg Kick
+Takeoff/Land: Jaw Clench
+Stay: Nothing
+
+Aug 29
+Data 0-10 collected
+Data 11-40 collected
+Data 41-60 collected
+Data 61-80 collected
+Data 81-100 collected
+Data 101-120 collected
+Data 121-140 collected
+Data 141-160 collected
+Data 161-180 collected
+Data 181-200 collected
+
+Oct 4
+Data 201-220 collected
+Data 221-240 collected
+
+Oct 5
+Data 241-260 collected
+Data 261-280 collected
+Data 281-300 collected
+Data 301-320 collected
+
+Oct 10
+Data 321-340 collected
+Data 341-360 collected
+Data 361-380 collected
+Data 381-400 collected
+
+Oct 13
+Data 401-420 collected
+Data 421-440 collected
+Data 441-460 collected
+Data 461-480 collected
+
+Oct 15
+Data 481-500 collected
+Data 501-520 collected
+
+Oct 18
+Data 521-540 collected
+Data 541-560 collected
+
+Oct 19
+Data 561-580 collected
+Data 581-600 collected
+Data 601-620 collected
+Data 621-640 collected
+Data 641-660 collected
+Data 661-680 collected
+
+----------- LIMBS -----------
