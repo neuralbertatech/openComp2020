@@ -101,7 +101,7 @@ def print_raw(var):
             MyFile = open(TestSubject + TestFeature + "/" + FileTypes[CurrFileType] + str(FileNumber[CurrFileType]) + ".txt", 'w')
 
             print("### " + FileTypes[CurrFileType] + " ###")
-            time.sleep(1)
+            time.sleep(1)   ####### DOESN'T WORK, MUST FIX ##########
             print("Recording.")
 
 
