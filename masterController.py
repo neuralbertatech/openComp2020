@@ -38,6 +38,7 @@ Dataset = []
 ProcessedData = []
 ProcessedDataFFT = []
 ProcessedDataRAW = []
+DatapointBeingCollected = [[] for i in range(16)]
 
 FlightDataOutput = ["", "", "", "", ""]
 
