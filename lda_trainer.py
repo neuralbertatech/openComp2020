@@ -1,3 +1,10 @@
+"""
+This program will open existing training data to train and save an LDA model.
+
+This is an older version of the method in masterController, which uses
+k-fold cross validation instead of this program's test/train split.
+"""
+
 import pickle
 import sys
 import numpy as np
@@ -14,6 +21,7 @@ totalSamples = 680
 sampleLen = 250
 halfData = True # Sometimes every second point of BCI data is inverted. Remove?
 savePlots = False # True drastically increases runtime
+showFFTBins = True # Draw the bin lines on the plots
 
 showLoadingBar = True
 loadingBar = ""
@@ -133,12 +141,12 @@ for sampleNum in range(len(dataset)):
         if(savePlots):
             plt.clf()
             plt.plot(freq, sp, plotColors[channelNum])
-            # plt.axvline(x=4, color="k")
-            # plt.axvline(x=7.5, color="k")
-            # plt.axvline(x=12.5, color="k")
-            # plt.axvline(x=30, color="k")
+            if(showFFTBins):
+                plt.axvline(x=4, color="k")
+                plt.axvline(x=7.5, color="k")
+                plt.axvline(x=12.5, color="k")
+                plt.axvline(x=30, color="k")
             plt.savefig("fft" + str(channelNum) + ".png")
-
 
 
         # Bin the results
@@ -168,8 +176,6 @@ for sampleNum in range(len(dataset)):
     avgBands = []
     for bandNum in range(5):
         avgBands.append(round(np.average(np.array(bands)[:,bandNum]),2))
-
-    # print(np.round(bands, 2))
 
 
     # Add the label back

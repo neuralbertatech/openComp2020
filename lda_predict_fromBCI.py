@@ -1,3 +1,12 @@
+"""
+Reads live data from the OpenBCI and uses the LDA model saved as "lda_model.pk"
+to make predictions.
+
+This is an old implementation, the complete implementation can be found in
+masterController.py
+"""
+
+
 from pyOpenBCI import OpenBCICyton
 import time
 import numpy as np
@@ -12,12 +21,16 @@ lda_model = pickle.load(open('lda_model.pk', 'rb'))
 CurrentSample = []
 DataCounter = 0
 HalfData = True
+plotData = False    # Save the data plots
+showFFTBins = True  # Draw FFT bin lines on the plots
 
 
 def collectSample(bciData):
     global CurrentSample, DataCounter, HalfData
 
     ### Add error message for railed channels
+
+    # Properly implemented in masterController.py
 
     if(HalfData and DataCounter%2 == 0):
         CurrentSample.append(bciData.channels_data)
@@ -38,9 +51,10 @@ def predictSample():
         smoothedData = savgol_filter(np.array(CurrentSample)[:,channelNum], 11, 2)
         x = np.arange(0,int(np.ceil(SAMPLE_LEN/2)),1)
 
-        # plt.clf()
-        # plt.plot(x, smoothedData, "r")
-        # plt.savefig("dataplt" + str(channelNum) + ".png")
+        if(plotData):
+            plt.clf()
+            plt.plot(x, smoothedData, "r")
+            plt.savefig("dataplt" + str(channelNum) + ".png")
 
 
 
@@ -53,14 +67,15 @@ def predictSample():
         sp = np.sqrt(sp.real**2 + sp.imag**2)
 
 
-
-        # plt.clf()
-        # plt.plot(freq, sp, "r")
-        # plt.axvline(x=4, color="k")
-        # plt.axvline(x=7.5, color="k")
-        # plt.axvline(x=12.5, color="k")
-        # plt.axvline(x=30, color="k")
-        # plt.savefig("fft" + str(channelNum) + ".png")
+        if(plotData):
+            plt.clf()
+            plt.plot(freq, sp, "r")
+            if(showFFTBins):
+                plt.axvline(x=4, color="k")
+                plt.axvline(x=7.5, color="k")
+                plt.axvline(x=12.5, color="k")
+                plt.axvline(x=30, color="k")
+            plt.savefig("fft" + str(channelNum) + ".png")
 
 
 

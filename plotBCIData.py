@@ -1,16 +1,19 @@
+"""
+This program will plot your recorded brain data.
+
+### NOTE ###
+This program is a bigger memory hog than Chrome!
+If you are generating a gif with many frames, you may run into a problem
+where your OS restricts the number of open files. To circumvent this, use
+"ulimit -n 700" or some value slightly larger than the number of frames
+you intent to plot.
+"""
+
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.signal import savgol_filter
-
-### NOTE ###
-# This program is a bigger memory hog than Chrome!
-# If you are generating a gif with many frames, you may run into a problem
-# where your OS restricts the number of open files. To circumvent this, use
-# "ulimit -n 700" or some value slightly larger than the number of frames
-# you intent to plot.
-### NOTE ###
 
 queueToPlot = "Right"
 startNumber = 0
@@ -124,22 +127,3 @@ if(GenerateGif):
 
 
 print("Done!")
-
-# One Image
-# fig = plt.figure()
-# fig.subplots_adjust(hspace=1, wspace=1)
-# params = {'legend.fontsize': 'x-large',
-#           'figure.figsize': (15, 5),
-#          'axes.labelsize': 'x-small',
-#          'axes.titlesize':'x-small',
-#          'xtick.labelsize':'x-small',
-#          'ytick.labelsize':'x-small'}
-# plt.rcParams.update(params)
-#
-# for i in range(1, 17):
-#     ax = fig.add_subplot(4, 4, i)
-#     # ax.text(0.5, 0.5, str((4, 4, i)), fontsize=18, ha='center')
-#     ax.plot(x, channels[i-1], plotColors[i-1])
-#
-#
-# plt.savefig("combined.png", dpi=500)

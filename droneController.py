@@ -1,3 +1,11 @@
+"""
+This program provides a computer interface to control the drone.
+
+This is essentially the same controller that is implemented in the masterController.py.
+The only real difference is that this waits on keyboard input instead of waiting on
+the classifiers' label.
+"""
+
 import time
 import tellopy
 import sys
