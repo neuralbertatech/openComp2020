@@ -1,5 +1,19 @@
+"""
+This is the entirety of the python brain drone controller. All methods are contained within this file.
+To use the brain drone, simply type:
+"python masterController.py"
+into the command line and follow the onscreen instructions.
+
+If you have collected a baseline, but wish to rerun the program wihtout recollecting it, simply call:
+"python masterController.py nocol"
+
+If your baseline files are stored in a directory different than the global variable SampleSaveDirectory,
+then include your directory (relative to this file) as an argument, like:
+"python masterController.py nocol dataDirectory"
+"""
+
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_validate
 from scipy.signal import savgol_filter
 from pyOpenBCI import OpenBCICyton
 import matplotlib.pyplot as plt
@@ -12,25 +26,18 @@ import time
 import sys
 import os
 
-"""
-Here I will describe what this file does. (Maybe add how to run as well?)
-
-If you have collected a baseline, but wish to rerun the program wihtout recollecting it, simply call:
-python masterController.py nocol
-"""
-
-
 SAMPLE_LEN = 250                 # 250samples = 1s
-SAMPLE_COUNT = 10
-SAMPLE_RECORDING_TIME = 250      # Amount of samples to switch (time between recordings in units of 1/250s), (min=1)
-SAVE_PLOTS = False
-COLLECT_LIVE = True              # False will generate random data (reccomended to enable NO_FLY_MODE)
-WAIT_TO_CONTINUE = False
-TEST_TRAIN_SPLIT = 0.05
+SAMPLE_COUNT = 10                # Amount of samples of each command to record
+SAMPLE_RECORDING_TIME = 250      # Amount of samples to switch (time between recordings in units of 1/250s), (minimum=1)
+NUM_FOLDS = 10                   # For k-fold cross validation
+SAVE_PLOTS = False               # Plot data while collecting
+WAIT_TO_CONTINUE = False         # False will automatically skip program pauses
+CONNECT_DRONE = False            # False will simulate drone responses
+COLLECT_LIVE = False             # False will generate random data (reccomended to enable NO_FLY_MODE)
 NO_FLY_MODE = False              # Connect drone, except instead of flying, just print output
 SPEED = 20                       # value 0-100 that controls the drones speed
 
-LDAModel = LinearDiscriminantAnalysis()
+LDAAVGModel = LinearDiscriminantAnalysis()
 LDAFFTModel = LinearDiscriminantAnalysis()
 LDARAWModel = LinearDiscriminantAnalysis()
 
@@ -43,14 +50,15 @@ DatapointBeingCollected = [[] for i in range(16)]
 FlightDataOutput = ["", "", "", "", ""]
 
 FileNumber = [-1, 0, 0, 0, 0, 0, 0, 0] # For some reason it just doesn't record the first Command, so start at -1
-Commands = ["Up", "Down", "Forward", 'Back', "Left", "Right", "Stay", "Land"]  ##### Less features?
+Commands = ["Up", "Down", "Forward", 'Back', "Left", "Right", "Stay", "Land"]
+CommandForDroneThread = ""
 CurrCommand = 0
+ProgramStep = 0
+FirstRun = True
+DroneConnected = False
 Count = SAMPLE_LEN+SAMPLE_RECORDING_TIME*2 + 1  # Used throughout code to keep a global count of iterations, set to large num to skip first iter of collecting
 
-ProgramStep = 0 # 0 = collecting, 1 = training, 2 = flying
-
 SampleSaveDirectory = "TrainingData/masterControllerSessions"  # Set to "" if you do not wish to record samples
-# SampleSaveDirectory = ""
 if(SampleSaveDirectory != ""):
     SampleFile = open(SampleSaveDirectory + "/" + Commands[CurrCommand] + str(FileNumber[CurrCommand]) + ".txt", 'w')
 
@@ -69,6 +77,12 @@ if(len(sys.argv) > 1):
     else:
         print("Unknown argument '" + str(sys.argv[1]) + "'\n")
         exit()
+
+if(not COLLECT_LIVE and not NO_FLY_MODE and CONNECT_DRONE):
+    print("\n#############################################################################")
+    print("# WARNING: Drone is configured to fly and is being fed random commands.     #")
+    print("#          It is strongly recommended to enable NO_FLY_MODE.                #")
+    print("#############################################################################")
 
 
 def showLoadingBar(loadingCount, loadingTotal):
@@ -93,8 +107,6 @@ def preprocess(training: bool, sampleNum = 0):
     """
     global Dataset, ProcessedData, Commands, DatapointBeingCollected
 
-    # print("#### Start Processing ####")   ###################################
-
     channelLen = 0
     if(training): channelLen = len(Dataset[sampleNum][0])
     else: channelLen = len(DatapointBeingCollected[0])
@@ -110,26 +122,21 @@ def preprocess(training: bool, sampleNum = 0):
             smoothedData = savgol_filter(DatapointBeingCollected[channelNum], 11, 2)
         x = np.arange(0,125,1)
 
-
-
+        # Plot
         if(SAVE_PLOTS and training): # We never want to plot while flying
             plt.clf()
             plt.plot(x, smoothedData, "r")
             plt.savefig("savgol" + str(channelNum) + ".png")
 
-
-
+        # Create Avg channel
         for dataPoint in range(len(smoothedData)):
-            # print(dataPoint)
             avgChannel[dataPoint] += smoothedData[dataPoint]
 
-
-
+        # Plot
         if(SAVE_PLOTS and training and channelNum==15): # We never want to plot while flying
             plt.clf()
             plt.plot(x, avgChannel, "b")
             plt.savefig("avgChannel" + str(channelNum) + ".png")
-
 
     if(training):
         # Add the label back
@@ -151,8 +158,6 @@ def preprocessRAW(training: bool, sampleNum = 0):
     """
     global Dataset, ProcessedDataRAW, Commands, DatapointBeingCollected
 
-    # print("#### Start Processing ####")   ###################################
-
     channelLen = 0
     if(training): channelLen = len(Dataset[sampleNum][0])
     else: channelLen = len(DatapointBeingCollected[0])
@@ -168,24 +173,9 @@ def preprocessRAW(training: bool, sampleNum = 0):
             smoothedData = savgol_filter(DatapointBeingCollected[channelNum], 11, 2)
         x = np.arange(0,125,1)
 
-
-
-        # if(SAVE_PLOTS and training): # We never want to plot while flying
-        #     plt.clf()
-        #     plt.plot(x, smoothedData, "r")
-        #     plt.savefig("savgol" + str(channelNum) + ".png")
-
-
-
+        # Add data to one big channel
         for dataPoint in range(len(smoothedData)):
             bigChannel.append(smoothedData[dataPoint])
-
-
-
-        # if(SAVE_PLOTS and training and channelNum==15): # We never want to plot while flying
-        #     plt.clf()
-        #     plt.plot(x, avgChannel, "b")
-        #     plt.savefig("avgChannel" + str(channelNum) + ".png")
 
 
     if(training):
@@ -197,8 +187,6 @@ def preprocessRAW(training: bool, sampleNum = 0):
         return bigChannel
 
 
-
-### Turns out.. we don't really care about the power bins. Kept in case we end up actually needing them
 def preprocessFFT(training: bool, sampleNum = 0):
     """
     This func takes in a single data point and preprocesses it.
@@ -207,8 +195,6 @@ def preprocessFFT(training: bool, sampleNum = 0):
     - sampleNum tells us which iter we are training
     """
     global Dataset, ProcessedDataFFT, Commands, DatapointBeingCollected
-
-    # print("#### Start Processing ####")   ###################################
 
     # [Delta (0-4), Theta (4-7.5), Alpha (7.5-12.5), Beta (12.5-30), Gamma (30-70)]
     bands = []
@@ -223,11 +209,11 @@ def preprocessFFT(training: bool, sampleNum = 0):
         x = np.arange(0,125,1)
 
 
+        # Plot
         if(SAVE_PLOTS and training): # We never want to plot while flying
             plt.clf()
             plt.plot(x, smoothedData, "r")
             plt.savefig("dataplt" + str(channelNum) + ".png")
-
 
 
         # FFT the data
@@ -239,7 +225,7 @@ def preprocessFFT(training: bool, sampleNum = 0):
         sp = np.sqrt(sp.real**2 + sp.imag**2)
 
 
-
+        # Plot
         if(SAVE_PLOTS and training): # We never want to plot while flying
             plt.clf()
             plt.plot(freq, sp, "r")
@@ -248,7 +234,6 @@ def preprocessFFT(training: bool, sampleNum = 0):
             plt.axvline(x=12.5, color="k")
             plt.axvline(x=30, color="k")
             plt.savefig("fft" + str(channelNum) + ".png")
-
 
 
         # Bin the results
@@ -274,8 +259,6 @@ def preprocessFFT(training: bool, sampleNum = 0):
         # Append the average of all points in the bins
         bands.append(list(np.array(thisBand)/np.array(thisBandCount)))
 
-    # print("#### End Processing ####")    ###################################
-
     # Now, cast the set of bins of each electrode into a single set of bins (average)
     avgBands = []
     for bandNum in range(5):
@@ -291,23 +274,58 @@ def preprocessFFT(training: bool, sampleNum = 0):
 
 
 def checkForRailedChannels(data):
-    global ProgramStep
+    global ProgramStep, Count, DatapointBeingCollected, CommandForDroneThread
     # print status of all channels (Railed, Good)
 
-    allChannelsNotRailed = True # Encode this
-    if(allChannelsNotRailed):
-        print("No railed channels, begin collecting data")
-        print("\n2: Collect Data")
-        if(WAIT_TO_CONTINUE): input("Press return to continue...")
-        ProgramStep += 1
+    if(not COLLECT_LIVE):
+        allChannelsGood = True
+
+    if(Count < SAMPLE_LEN):
+        dataPoint = data.channels_data
+
+        if(Count % 2 == 0): # Halve the data, half is inverted signal (no bueno)
+            for point in range(0,len(dataPoint)):
+                DatapointBeingCollected[point].append(dataPoint[point])
+        Count += 1
+
+    else: # Finished collecting sample
+        railedChannels = []
+
+        # Check for rails
+        for channelNum in range(16):
+            thisLineGood = False
+
+            line = DatapointBeingCollected[channelNum]
+            value = line[0]
+            for i in line:
+                if(i != value):
+                    thisLineGood = True
+                    break
+
+            if(not thisLineGood):
+                railedChannels.append(channelNum)
+
+        # Reset
+        DatapointBeingCollected = [[] for i in range(16)]
+        Count = 0
+
+        # Decide if we are good to go
+        if(len(railedChannels) == 0):
+            allChannelsGood = True
+        else:
+            print("Railed Channels: ", railedChannels)
+
+
+        if(allChannelsGood):
+            print("\nNo railed channels, begin collecting data")
+            print("\n2: Collect Data")
+            if(WAIT_TO_CONTINUE): input("Press return to continue...")
+            ProgramStep += 1
 
 
 def trainModel():
-    global ProgramStep, ProcessedData, ProcessedDataFFT, ProcessedDataRAW, LDAModel, Commands
+    global ProgramStep, ProcessedData, ProcessedDataFFT, ProcessedDataRAW, LDAAVGModel, Commands
 
-    ## In an ideal world, we will use cross validation
-    # but since I dunno how to implement that rn and time is of the essence
-    # we're gonna stick with naive test/train split and burn 25% of our data
     print(str(SAMPLE_COUNT*len(Commands)) + " / " + str(SAMPLE_COUNT*len(Commands)) + ": Done!")
     print("\n3: Train Model")
     if(WAIT_TO_CONTINUE): input("Press return to continue...")
@@ -332,33 +350,26 @@ def trainModel():
     # so delete to clear up some memory for flying
     del Dataset[:]
 
-    print("Preparing Avg Model")
+    #########################################################################################################
+    print("Preparing AVG Model")
     print("0%    10%    20%    30%    40%    50%    60%    70%    80%    90%   100%")
 
     # Shuffle Data
     np.random.shuffle(ProcessedData)
-    showLoadingBar(20, 100) # Show that we are about 20% (20/100) done
+    showLoadingBar(33, 100) # Show that we are about 33% (33/100) done
 
     # Split Labels and Data
     ProcessedData = np.array(ProcessedData)
-    X = ProcessedData[:, :-1]
-    y = ProcessedData[:, -1]
-    showLoadingBar(40, 100) # Show that we are about 40% (40/100) done
-
-    # Split Test/Train
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = TEST_TRAIN_SPLIT, random_state = 0)
-    X_train = X_train.astype(np.float64)
-    X_test = X_test.astype(np.float64)
-    showLoadingBar(60, 100) # Show that we are about 60% (60/100) done
+    Xavg = ProcessedData[:, :-1].astype(np.float64)
+    yavg = ProcessedData[:, -1]
+    showLoadingBar(66, 100) # Show that we are about 66% (66/100) done
 
     # Actually train it
-    LDAModel.fit(X_train, y_train)
+    LDAAVGModel.fit(Xavg, yavg)
     showLoadingBar(100, 100) # Show that we are about 100% (100/100) done
 
-    # print(np.array(ProcessedData))
-
     print() # So we don't overwrite the loading bar
-
+    #########################################################################################################
 
     #########################################################################################################
     print("Preparing FFT Model")
@@ -366,25 +377,17 @@ def trainModel():
 
     # Shuffle Data
     np.random.shuffle(ProcessedDataFFT)
-    showLoadingBar(20, 100) # Show that we are about 20% (20/100) done
+    showLoadingBar(33, 100) # Show that we are about 33% (33/100) done
 
     # Split Labels and Data
     ProcessedDataFFT = np.array(ProcessedDataFFT)
-    Xfft = ProcessedDataFFT[:, :-1]
+    Xfft = ProcessedDataFFT[:, :-1].astype(np.float64)
     yfft = ProcessedDataFFT[:, -1]
-    showLoadingBar(40, 100) # Show that we are about 40% (40/100) done
-
-    # Split Test/Train
-    Xfft_train, Xfft_test, yfft_train, yfft_test = train_test_split(Xfft, yfft, test_size = TEST_TRAIN_SPLIT, random_state = 0)
-    Xfft_train = Xfft_train.astype(np.float64)
-    Xfft_test = Xfft_test.astype(np.float64)
-    showLoadingBar(60, 100) # Show that we are about 60% (60/100) done
+    showLoadingBar(66, 100) # Show that we are about 66% (66/100) done
 
     # Actually train it
-    LDAFFTModel.fit(Xfft_train, yfft_train)
+    LDAFFTModel.fit(Xfft, yfft)
     showLoadingBar(100, 100) # Show that we are about 100% (100/100) done
-
-    # print(np.array(ProcessedData))
 
     print() # So we don't overwrite the loading bar
     #########################################################################################################
@@ -395,55 +398,34 @@ def trainModel():
 
     # Shuffle Data
     np.random.shuffle(ProcessedDataRAW)
-    showLoadingBar(20, 100) # Show that we are about 20% (20/100) done
+    showLoadingBar(33, 100) # Show that we are about 33% (33/100) done
 
     # Split Labels and Data
     ProcessedDataRAW = np.array(ProcessedDataRAW)
-    Xraw = ProcessedDataRAW[:, :-1]
+    Xraw = ProcessedDataRAW[:, :-1].astype(np.float64)
     yraw = ProcessedDataRAW[:, -1]
-    showLoadingBar(40, 100) # Show that we are about 40% (40/100) done
-
-    # Split Test/Train
-    Xraw_train, Xraw_test, yraw_train, yraw_test = train_test_split(Xraw, yraw, test_size = TEST_TRAIN_SPLIT, random_state = 0)
-    Xraw_train = Xraw_train.astype(np.float64)
-    Xraw_test = Xraw_test.astype(np.float64)
-    showLoadingBar(60, 100) # Show that we are about 60% (60/100) done
+    showLoadingBar(66, 100) # Show that we are about 66% (66/100) done
 
     # Actually train it
-    LDARAWModel.fit(Xraw_train, yraw_train)
+    LDARAWModel.fit(Xraw, yraw)
     showLoadingBar(100, 100) # Show that we are about 100% (100/100) done
-
-    # print(np.array(ProcessedData))
 
     print() # So we don't overwrite the loading bar
     #########################################################################################################
 
-    randomGuessingPercentage = round(100*(1/len(Commands)),2)
-    modelScorePercentage = round(100*LDAModel.score(X_test, y_test),2)
+    scores = cross_validate(LDAAVGModel, Xavg, yavg, cv=NUM_FOLDS)["test_score"]
+    modelScorePercentage = round(100*(sum(scores)/len(scores)),2)
+    print("\nAVG Model successfully classifies " + str(modelScorePercentage) + "% of the samples.")
 
-    print("\nPredictions AVG: ", LDAModel.predict(X_test)) # This uses the LDA to predict the label from the given 6D "xTest" value
-    print("Real Labels AVG: ", y_test) # These are the actual labels (that LDA has no access to this time)
-    print("AVG Model successfully classifies " + str(modelScorePercentage) + "% of the samples.")
-    # print("\nThat is " + str(round(modelScorePercentage - randomGuessingPercentage)) + "% better than randomly guessing at " + str(randomGuessingPercentage) + "% success.\n")
-
-
-    randomGuessingPercentage = round(100*(1/len(Commands)),2)
-    modelScorePercentage = round(100*LDAFFTModel.score(Xfft_test, yfft_test),2)
-
-    print("\nPredictions FFT: ", LDAFFTModel.predict(Xfft_test)) # This uses the LDA to predict the label from the given 6D "xTest" value
-    print("Real Labels FFT: ", yfft_test) # These are the actual labels (that LDA has no access to this time)
+    scores = cross_validate(LDAFFTModel, Xfft, yfft, cv=NUM_FOLDS)["test_score"]
+    modelScorePercentage = round(100*(sum(scores)/len(scores)),2)
     print("FFT Model successfully classifies " + str(modelScorePercentage) + "% of the samples.")
-    # print("\nThat is " + str(round(modelScorePercentage - randomGuessingPercentage)) + "% better than randomly guessing at " + str(randomGuessingPercentage) + "% success.\n")
 
-
-    randomGuessingPercentage = round(100*(1/len(Commands)),2)
-    modelScorePercentage = round(100*LDARAWModel.score(Xraw_test, yraw_test),2)
-
-    print("\nPredictions RAW: ", LDARAWModel.predict(Xraw_test)) # This uses the LDA to predict the label from the given 6D "xTest" value
-    print("Real Labels RAW: ", yraw_test) # These are the actual labels (that LDA has no access to this time)
+    scores = cross_validate(LDARAWModel, Xraw, yraw, cv=NUM_FOLDS)["test_score"]
+    modelScorePercentage = round(100*(sum(scores)/len(scores)),2)
     print("RAW Model successfully classifies " + str(modelScorePercentage) + "% of the samples.")
-    # print("\nThat is " + str(round(modelScorePercentage - randomGuessingPercentage)) + "% better than randomly guessing at " + str(randomGuessingPercentage) + "% success.\n")
 
+    print("Randomly guessing successfully classifies " + str(round(100*(1/len(Commands)),2)) + "% of the time.")
 
     ProgramStep += 1
 
@@ -460,84 +442,81 @@ def handler(event, sender, data, **args):
 def flyDrone():
     global DroneConnected, CommandForDroneThread, FlightDataOutput
 
-    # This is the drone thread
-    while(True): # Keep trying to reconnect if connection fails
-        drone = tellopy.Tello() ####### Need to find a way to delete this object to reinstatiate it properly ####################
-
-
-        try:
-            # Connect Drone
+    try:
+        # Connect Drone
+        if(CONNECT_DRONE):
+            drone = tellopy.Tello()
             drone.subscribe(drone.EVENT_FLIGHT_DATA, handler)
             drone.connect()
             drone.wait_for_connection(60.0)
 
 
-            # Drone Connected! Begin BCI control
-            print("\n5: Fly!")
-            print("To safely land the drone, press return at any time during flight.")
-            print("To immediately kill the drone, press k then return.")
+        # Drone Connected! Begin BCI control
+        print("\n5: Fly!")
+        if(not COLLECT_LIVE and not CONNECT_DRONE): print("WARNING:   BCI data and drone response is simulated.")
+        elif(not COLLECT_LIVE): print("WARNING:   BCI data is simulated.")
+        elif(not CONNECT_DRONE): print("WARNING:   Drone response is simulated.")
+        print("IMPORTANT: To safely land the drone, press return at any time during flight.")
+        print("           To immediately kill the drone, press k then return.")
+        if(WAIT_TO_CONTINUE): input("Press return to continue...")
 
-            if(WAIT_TO_CONTINUE): input("Press return to continue...")
+        print("\nFlight Dashboard")
+        DroneConnected = True
 
-            print("\nFlight Dashboard")
-            DroneConnected = True
+        while(True):
+            # If there is a command, execute it then reset
+            if(CommandForDroneThread != ""):
 
+                #### Kill drone ####
+                sysInput = select.select([sys.stdin], [], [], 1)[0]
+                if(sysInput):
+                    value = sys.stdin.readline().rstrip()
+                    if(value == "k"):
+                        print("\n#################################")
+                        print("### Killing drone immediately ###")
+                        print("#################################\n")
+                        if(CONNECT_DRONE): updateDrone(drone, "k", SPEED)
+                        break
 
-            while(True):
-                # If there is a command, execute it then reset
-                if(CommandForDroneThread != ""):
+                    elif(value == ""):
+                        print("\n###################################")
+                        print("### Safely landing the drone... ###")
+                        print("###################################\n")
+                        if(CONNECT_DRONE): updateDrone(drone, "lnd", SPEED)
+                        break
+                #### Kill drone ####
 
-                    #### Kill drone ####
-                    input = select.select([sys.stdin], [], [], 1)[0]
-                    if(input):
-                        value = sys.stdin.readline().rstrip()
-                        if(value == "k"):
-                            print("\n#################################")
-                            print("### Killing drone immediately ###")
-                            print("#################################\n")
-                            updateDrone(drone, "k", SPEED)
-                            break
+                # Keep spacing consistent so the dashboard is pretty
+                output = [""] # Put one item (bat) in it already so we can keep the indicies the same
+                for i in range(1,5):
+                    space = " "*(7 - len(FlightDataOutput[i]))
+                    output.append(str(FlightDataOutput[i]) + space)
+                # Keep spacing consistent so the dashboard is pretty
 
-                        elif(value == ""):
-                            print("\n###################################")
-                            print("### Safely landing the drone... ###")
-                            print("###################################\n")
-                            updateDrone(drone, "lnd", SPEED)
-                            break
-                    #### Kill drone ####
+                if(not CONNECT_DRONE): FlightDataOutput[0] = "BAT: 100 " # If drone not connected, handler won't be updating bat, simulate.
 
-                    # Update Dashboard
-                    # sys.stdout.write(' %s| Current Command: %s\r' % (FlightDataOutput[0], FlightDataOutput[1]))
-                    # sys.stdout.flush()
-
-                    # Keep spacing consistent so the dashboard is pretty
-                    output = [""] # Has one item in it already so we can keep the indicies the same
-                    for i in range(1,5):
-                        space = " "*(7 - len(FlightDataOutput[i]))
-                        output.append(str(FlightDataOutput[i]) + space)
+                print("### " + str(FlightDataOutput[0]) + "| AVG: " + output[2] + " | RAW: " + output[3] + " | FFT: " + output[4] + " | Command: " + output[1] + " ###")
 
 
-                    print("### " + str(FlightDataOutput[0]) + "| AVG: " + output[2] + " | RAW: " + output[3] + " | FFT: " + output[4] + " | Command: " + output[1] + " ###")
+                # Execute command
+                if(CONNECT_DRONE): updateDrone(drone, CommandForDroneThread, SPEED)
+                CommandForDroneThread = ""
+
+                time.sleep(0.9)
+
+            # Wait for a hot minute so we don't just destroy the CPU with this thread
+            time.sleep(0.1)
+
+    except Exception as ex:
+        print(ex)
+
+    finally:
+        if(CONNECT_DRONE): drone.quit()
 
 
-                    # Execute command
-                    updateDrone(drone, CommandForDroneThread, SPEED)
-                    CommandForDroneThread = ""
-
-                    time.sleep(0.9)
-
-                # Wait for a hot minute so we don't just destroy the CPU with this thread
-                time.sleep(0.1)
-
-        except Exception as ex:
-            print(ex)
-        finally:
-            drone.quit()
-
-        time.sleep(3)
-        if(input("\nDrone connection failed. Try again? (y/n): ").lower() == "n"):
-            print("Drone not connected, ending.")
-            exit()
+    time.sleep(3)
+    print("Drone failed to connect, ending.")
+    exit()
 
 
 def liveClassifier():
@@ -551,41 +530,41 @@ def liveClassifier():
 
         DatapointBeingCollected = [[] for i in range(16)] # Empty the currDatapoint
 
-        FlightDataOutput[2] = LDAModel.predict(np.array(bandsToPredict).reshape(1, -1))[0]
+        FlightDataOutput[2] = LDAAVGModel.predict(np.array(bandsToPredict).reshape(1, -1))[0]
         FlightDataOutput[3] = LDAFFTModel.predict(np.array(bandsToPredictFFT).reshape(1, -1))[0]
         FlightDataOutput[4] = LDARAWModel.predict(np.array(bandsToPredictRAW).reshape(1, -1))[0]
 
-        # print("\nAVG: ", prediction, "  FFT: ", predictionFFT, "  RAW: ", predictionRAW)
-
-        # If two of the commands match, great! If not, stay.
-        if(FlightDataOutput[2] == FlightDataOutput[3]):
-            FlightDataOutput[1] = FlightDataOutput[2]
-        elif (FlightDataOutput[3] == FlightDataOutput[4]):
-            FlightDataOutput[1] = FlightDataOutput[3]
-        elif (FlightDataOutput[2] == FlightDataOutput[4]):
-            FlightDataOutput[1] = FlightDataOutput[4]
-        else:
-            FlightDataOutput[1] = "Stay"
+    else: # Not collecting live, just do random.
+        FlightDataOutput[2] = Commands[random.randint(0,len(Commands)-1)]
+        FlightDataOutput[3] = Commands[random.randint(0,len(Commands)-1)]
+        FlightDataOutput[4] = Commands[random.randint(0,len(Commands)-1)]
 
 
-        # AVG is really good at predicting Jaw, it overrides FFT's say.
-        if(FlightDataOutput[2] == "Jaw"):
-            FlightDataOutput[1] = "Jaw"
-
-
-        # Send the final result
-        return FlightDataOutput[1]
-
+    # If two of the commands match, great! If not, stay.
+    if(FlightDataOutput[2] == FlightDataOutput[3]):
+        FlightDataOutput[1] = FlightDataOutput[2]
+    elif (FlightDataOutput[3] == FlightDataOutput[4]):
+        FlightDataOutput[1] = FlightDataOutput[3]
+    elif (FlightDataOutput[2] == FlightDataOutput[4]):
+        FlightDataOutput[1] = FlightDataOutput[4]
     else:
-        print("WARNING: Not collecting live data, so a random command will be passed.")
-        return Commands[random.randint(0,len(Commands)-1)]
+        FlightDataOutput[1] = "Stay"
+
+
+    # AVG is really good at predicting Jaw, it has 100% weight.
+    if(FlightDataOutput[2] == "Jaw"):
+        FlightDataOutput[1] = "Jaw"
+
+
+    # Send the final result
+    return FlightDataOutput[1]
+
 
 
 def updateDrone(drone, command, speed):
     global DroneOnGround
 
     # Resets the drone's movement
-
     drone.up(0)
     drone.down(0)
     drone.forward(0)
@@ -595,11 +574,8 @@ def updateDrone(drone, command, speed):
     drone.clockwise(0)
     drone.counter_clockwise(0)
 
-    ##TODO Add an if bypass to check if the same argument is passed in twice, reduces jitter?
-
     if(NO_FLY_MODE):
         return
-
 
     if(command == "Land"):
         if(DroneOnGround):
@@ -626,11 +602,11 @@ def updateDrone(drone, command, speed):
     elif(command == "k"):
         drone.emergency()
 
-    elif(command == "l"): # Not accessable
+    elif(command == "l"): # Not accessible
         drone.left(speed)
-    elif(command == "r"): # Not accessable
+    elif(command == "r"): # Not accessible
         drone.right(speed)
-    elif(command == "ffr"): # Not accessable
+    elif(command == "ffr"): # Not accessible
         drone.flip_forwardright()
 
 
@@ -643,9 +619,6 @@ def collectSample(data):
         Count = SAMPLE_LEN*2
         time.sleep(1)
 
-    # if(Count == 0):
-        # print("#### START COLLECTING ####") ###################################
-
     if(Count < SAMPLE_LEN):
         dataPoint = data.channels_data
 
@@ -655,7 +628,6 @@ def collectSample(data):
         Count += 1
 
     else: # Finished collecting sample
-        # print("#### END COLLECTING ####") ###################################
         if(Count >= SAMPLE_LEN):
             FileNumber[CurrCommand] += 1
             Count = 0
@@ -669,7 +641,7 @@ def collectBaseline(data):
         dataPoint = data.channels_data
 
         if(Count % 2 == 0): # Halve the data, half is inverted signal (no bueno)
-            DatapointBeingCollected[0].append(dataPoint[0]) ###### MIGHT BREAK THINGS ######
+            DatapointBeingCollected[0].append(dataPoint[0])
             line = str(dataPoint[0])
             for point in range(1,len(dataPoint)):
                 # Save the data right away so we don't have to reload and reformat it
@@ -743,10 +715,10 @@ def loadSavedData():
     global Dataset, ProcessedData, Commands, Count, ProgramStep
     loadingCount = 0
     loadingTotal = len(Commands)*SAMPLE_COUNT
-    loadingBar = ""
+
 
     print("\n1: Connect BCI")
-    print("Not Connecting a BCI. Done.\n")
+    print("Not connecting BCI, data will be simulated.\n")
     print("2: Collect Data")
     if(WAIT_TO_CONTINUE): input("Presss return to continue...")
 
@@ -755,21 +727,13 @@ def loadSavedData():
 
     for command in Commands:
         for sampleNum in range(0, SAMPLE_COUNT):
-
-            ## Loading Bar     ########################## Update?
-            loadingCount += 1
-            loadingBar = "#"*int(np.ceil(70*loadingCount/loadingTotal))
-            sys.stdout.write('[%s] \r' % (loadingBar))
-            sys.stdout.flush()
-            ## Loading Bar
-
+            loadingCount = showLoadingBar(loadingCount, loadingTotal)
 
             channels = [[] for i in range(16)]
 
             with open(SampleSaveDirectory + "/" + command + str(sampleNum) + ".txt", "r") as file:
 
                 for line in file:
-                    # if(Count % 2 == 0):
                     line = line.lstrip("[")
                     line = line.strip("\n")
                     line = line.strip("'")
@@ -785,7 +749,6 @@ def loadSavedData():
 
                     for i in range(len(line)):
                         channels[i].append(float(line[i]))
-                    # labelToAppend = line[-1].strip("'")
 
                     Count += 1
                 channels.append(command) # Add the label
@@ -818,11 +781,10 @@ def bciStream(data):
         if(FirstRun):
             print("\n4: Connect Drone")
             if(WAIT_TO_CONTINUE): input("Press return to continue...")
+            if(not CONNECT_DRONE): print("Not connecting drone, data will be simulated.")
 
             droneThread = threading.Thread(target=flyDrone)
             droneThread.start()
-
-            # DroneConnected = True ########################### (Temp)
 
             FirstRun = False
             Count = 0
@@ -852,7 +814,7 @@ if(COLLECT_LIVE):
     board = OpenBCICyton(port='/dev/tty.usbserial-DM01N7JO', daisy=True)
     board.start_stream(bciStream)
 
-else:
+else: # Fake the data
     # Don't bother connecting board, just run the bciStream() like OpenBCICyton would
     while(True):
         bciStream("")
