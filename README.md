@@ -16,35 +16,44 @@ To open terminal, press ` command + space ` and type ` terminal ` then press ` e
 Navigate to your desired install location using
 ` cd [directory] ` (For example, ` cd Desktop `)
 
-Clone this repo\n
+Clone this repo
+
 ` git clone https://github.com/neuralbertatech/openComp2020 `
 
-Navigate into this repo\n
+Navigate into this repo
+
 ` cd openComp2020 `
 
-Install homebrew\n
+Install homebrew
+
  ` ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" `
 
-Install venv\n
+Install venv
+
  ` brew install venv `
 
-Install pyenv\n
+Install pyenv
+
  ` brew install pyenv `
 
-Configure a virtual environment to contain dependencies\n
+Configure a virtual environment to contain dependencies
+
 ```
  pyenv install 3.6.5
  pyenv local 3.6.5
  python3 -m venv venv
 ```
 
-Activate the environment\n
+Activate the environment
+
 ` source venv/bin/activate `
 
-Update Pip installer\n
+Update Pip installer
+
 ` pip install --upgrade pip`
 
-To install the required software run\n
+To install the required software run
+
 ` pip install -r requirements.txt `
 
 ### Windows
@@ -55,22 +64,27 @@ Not yet tested
 
 
 ## Run The Program
-Activate the virtual environment with\n
+Activate the virtual environment with
+
 ` pyenv local 3.6.5 `
 
-and\n
+and
+
 ` source venv/bin/activate `
 
 
-Then finally, run the command\n
+Then finally, run the command
+
 ` python masterController.py `
 
 and follow the onscreen instructions.
 
-If you are running the program after a training session, and have not yet moved the OpenBCI from where it was when the baseline was collected, you can reuse this data and skip the lengthy baseline collection process by calling\n
+If you are running the program after a training session, and have not yet moved the OpenBCI from where it was when the baseline was collected, you can reuse this data and skip the lengthy baseline collection process by calling
+
 ` python masterController.py nocol `
 
-By default, the previous session will be saved to ~/TrainingData/masterControllerSessions. If you would like to use data in another directory, you can call\n
+By default, the previous session will be saved to ~/TrainingData/masterControllerSessions. If you would like to use data in another directory, you can call
+
 ` python masterController.py nocol [directory relative to this file] `
 
 
