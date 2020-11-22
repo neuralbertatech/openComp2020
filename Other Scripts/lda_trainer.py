@@ -15,12 +15,14 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 
 # Define the data
-commands = ["Back", "Down", "Forward", "Left", "Right", "Stay", "Up", "Jaw"]
+# commands = ["Back", "Down", "Forward", "Left", "Right", "Stay", "Up", "Jaw"]
+commands = ["Back"]
 dataset = []
-totalSamples = 680
+# totalSamples = 680
+totalSamples = 1
 sampleLen = 250
 halfData = True # Sometimes every second point of BCI data is inverted. Remove?
-savePlots = False # True drastically increases runtime
+savePlots = True # True drastically increases runtime
 showFFTBins = True # Draw the bin lines on the plots
 
 showLoadingBar = True
@@ -141,6 +143,8 @@ for sampleNum in range(len(dataset)):
         if(savePlots):
             plt.clf()
             plt.plot(freq, sp, plotColors[channelNum])
+            plt.ylabel("Amplitude")
+            plt.xlabel("Frequency (Hz)")
             if(showFFTBins):
                 plt.axvline(x=4, color="k")
                 plt.axvline(x=7.5, color="k")
@@ -172,6 +176,16 @@ for sampleNum in range(len(dataset)):
         # Append the average of all points in the bins
         bands.append(list(np.array(thisBand)/np.array(thisBandCount)))
 
+
+        # Plot the histograms
+        if(savePlots):
+            binNames = ["Delta", "Theta", "Alpha", "Beta", "Gamma"]
+            plt.clf()
+            plt.ylabel("Amplitude")
+            plt.bar(binNames, bands[channelNum], color=plotColors[channelNum])
+            plt.savefig("hist" + str(channelNum) + ".png")
+
+
     # Now, cast the set of bins of each electrode into a single set of bins (average)
     avgBands = []
     for bandNum in range(5):
@@ -181,8 +195,16 @@ for sampleNum in range(len(dataset)):
     # Add the label back
     avgBands.append(dataset[sampleNum][-1])
     binnedDataset.append(avgBands)
+
 ### End Extract the Frequency Bins ###
 
+# Plot the histograms
+if(savePlots):
+    binNames = ["Delta", "Theta", "Alpha", "Beta", "Gamma"]
+    plt.clf()
+    plt.ylabel("Amplitude")
+    plt.bar(binNames, binnedDataset[0][:-1])
+    plt.savefig("FullHist.png")
 
 
 ### Prepare Model ###

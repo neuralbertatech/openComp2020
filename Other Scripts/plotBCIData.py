@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.signal import savgol_filter
 
-queueToPlot = "Right"
+queueToPlot = "Back"
 startNumber = 0
 numberToPlot = 680
 loadingCount = 0
