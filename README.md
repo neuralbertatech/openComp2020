@@ -1,7 +1,7 @@
 # NeurAlbertaTech: Open Competiiton 2020
 
 ## Project Description
-The NAT Brain Drone is a general purpose BCI classification controller that is specifically tailored to control a drone. This controller is fundamentally designed to be expandable and general purpose so that it can realistically control whatever you can connected to the computer. For more information about this project, visit its [website](http://natuab.ca/drone "NeurAlbertaTech Website") or view the submission video on [youtube](https://youtube.com "NeurAlbertaTech Submission Video").
+The NAT Brain Drone is a general purpose BCI classification controller that is specifically tailored to control a drone. This controller is fundamentally designed to be expandable and general purpose so that it can realistically control whatever you can connected to the computer. For more information about this project, visit its [website](http://www.natuab.ca/project/drone "NeurAlbertaTech Website") or view the submission video on [youtube](https://www.youtube.com/watch?v=-3UTwKpKpcI&t=1s "NeurAlbertaTech Submission Video").
 
 ## Requirements
 * A 16 channel OpenBCI (Cyton + Daisy)
