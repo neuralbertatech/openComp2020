@@ -21,7 +21,7 @@ brotlipy == 0.7.0
 # testenv/lib/python3.8/site-packages/pip/_vendor/requests/__init__.py: 101
 # testenv/lib/python3.8/site-packages/pip/_vendor/requests/help.py: 23
 # testenv/lib/python3.8/site-packages/pip/_vendor/urllib3/contrib/pyopenssl.py: 51,145
-cryptography == 2.9.2
+cryptography == 3.2
 
 # testenv/lib/python3.8/site-packages/pip/_vendor/html5lib/_trie/datrie.py: 3
 datrie == 0.8.2
