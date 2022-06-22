@@ -87,7 +87,7 @@ mrlpy == 1.0.0
 # masterController.py: 20
 # plotBCIData.py: 12
 # testenv/lib/python3.8/site-packages/setuptools/msvc.py: 198
-numpy == 1.18.5
+numpy == 1.22.0
 
 # testenv/lib/python3.8/site-packages/setuptools/sandbox.py: 18
 openbaton-cli == 6.0.0
