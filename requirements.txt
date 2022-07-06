@@ -59,7 +59,7 @@ keyring == 21.2.1
 
 # testenv/lib/python3.8/site-packages/pip/_vendor/html5lib/treebuilders/etree_lxml.py: 25
 # testenv/lib/python3.8/site-packages/pip/_vendor/html5lib/treewalkers/etree_lxml.py: 4
-lxml == 4.5.2
+lxml == 4.9.1
 
 # Legacy/decision_tree.py: 2
 # Legacy/naive_bayes.py: 2
