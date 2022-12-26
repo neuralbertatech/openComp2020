@@ -315,4 +315,4 @@ setuptools == 49.2.0.post20200714
 tellopy == 0.6.0
 
 # testenv/lib/python3.8/site-packages/pip/_internal/commands/install.py: 43
-wheel == 0.34.2
+wheel == 0.38.1
