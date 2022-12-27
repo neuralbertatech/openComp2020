@@ -308,7 +308,7 @@ scipy == 1.5.0
 # testenv/lib/python3.8/site-packages/setuptools/unicode_utils.py: 4
 # testenv/lib/python3.8/site-packages/setuptools/version.py: 1
 # testenv/lib/python3.8/site-packages/setuptools/wheel.py: 11,12,13,14,15,16,17
-setuptools == 49.2.0.post20200714
+setuptools == 65.5.1
 
 # droneController.py: 10
 # masterController.py: 22
